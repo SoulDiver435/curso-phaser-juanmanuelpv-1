@@ -12,6 +12,8 @@ import Phaser from "../lib/phaser.js";
 /**
  * @typedef Monster
  * @type {Object}
+ * @property {number} id
+ * @property {number} monsterId
  * @property {string} name
  * @property {string} assetKey
  * @property {number} [assetFrame = 0]

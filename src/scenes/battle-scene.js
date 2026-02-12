@@ -83,6 +83,8 @@ export class BattleScene extends Phaser.Scene {
     this.#activeEnemyMonster = new EnemyBattleMonster({
       scene: this,
       monsterdetails: {
+        id: 2,
+        monsterId: 2,
         name: MONSTER_ASSET_KEYS.CARNODUSK,
         assetKey: MONSTER_ASSET_KEYS.CARNODUSK,
         assetFrame: 0,
@@ -98,21 +100,18 @@ export class BattleScene extends Phaser.Scene {
     //Monster del Player
     this.#activePlayerMonster = new PlayerBattleMonster({
       scene: this,
-      monsterdetails: {
-        name: MONSTER_ASSET_KEYS.IGUANIGNITE,
-        assetKey: MONSTER_ASSET_KEYS.IGUANIGNITE,
-        assetFrame: 0,
-        currentHp: 20,
-        maxHp: 25,
-        attackIds: [2, 1],
-        baseAttack: 15,
-        currentLevel: 5,
-      },
+      monsterdetails: dataManager.store.get(
+        DATA_MANAGER_STORE_KEYS.MONSTERS_IN_PARTY,
+      )[0],
       skipBattleAnimations: this.#skipAnimations,
     });
 
     //Renderizar el Main Info y Sub Info Pane
-    this.#battleMenu = new BattleMenu(this, this.#activePlayerMonster, this.#skipAnimations);
+    this.#battleMenu = new BattleMenu(
+      this,
+      this.#activePlayerMonster,
+      this.#skipAnimations,
+    );
 
     this.#createBattleStateMachine();
     this.#attackManager = new AttackManager(this, this.#skipAnimations);
@@ -258,7 +257,6 @@ export class BattleScene extends Phaser.Scene {
             // this.#transitionToNextScene();
             this.#battleStateMachine.setState(BATTLE_STATES.FINISHED);
           },
-
         );
       });
 
@@ -275,7 +273,6 @@ export class BattleScene extends Phaser.Scene {
           () => {
             this.#battleStateMachine.setState(BATTLE_STATES.FINISHED);
           },
-
         );
       });
 
@@ -330,7 +327,6 @@ export class BattleScene extends Phaser.Scene {
                 BATTLE_STATES.BRING_OUT_MONSTER,
               );
             },
-
           );
         });
       },
@@ -352,7 +348,6 @@ export class BattleScene extends Phaser.Scene {
                 this.#battleStateMachine.setState(BATTLE_STATES.PLAYER_INPUT);
               });
             },
-
           );
         });
       },

@@ -3,6 +3,7 @@ import { KENNEY_FUTURE_NARROW_FONT_NAME } from "../assets/font-keys.js";
 import { DIRECTION } from "../common/direction.js";
 import Phaser from "../lib/phaser.js";
 import { Controls } from "../utils/controls.js";
+import { DATA_MANAGER_STORE_KEYS, dataManager } from "../utils/data-manager.js";
 import { exhaustiveGuard } from "../utils/guard.js";
 import { NineSlice } from "../utils/nine-slice.js";
 import { SCENE_KEYS } from "./scene-keys.js";
@@ -61,7 +62,8 @@ export class TitleScene extends Phaser.Scene {
     console.log(`[${TitleScene.name}:create] invoked`);
 
     this.#selectedMenuOption = MAIN_MENU_OPTIONS.NEW_GAME;
-    this.#isContinueButtonEnabled = false;
+    this.#isContinueButtonEnabled =
+      dataManager.store.get(DATA_MANAGER_STORE_KEYS.GAME_STARTED) || false;
 
     //Crear TitleScene BG
     this.add
@@ -81,12 +83,12 @@ export class TitleScene extends Phaser.Scene {
 
     //Crear Menu
     const menuBgWidth = 500;
-  
+
     const menuBgContainer = this.#nineSliceMenu.createNineSliceContainer(
       this,
       menuBgWidth,
       200,
-      UI_ASSETS_KEYS.MENU_BACKGROUND
+      UI_ASSETS_KEYS.MENU_BACKGROUND,
     );
 
     const newGameText = this.add
@@ -117,7 +119,7 @@ export class TitleScene extends Phaser.Scene {
       .image(
         PLAYER_INPUT_CURSOR_POSITION.x,
         PLAYER_INPUT_CURSOR_POSITION.y,
-        UI_ASSETS_KEYS.CURSOR
+        UI_ASSETS_KEYS.CURSOR,
       )
       .setOrigin(0.5)
       .setScale(2.5);
@@ -141,21 +143,17 @@ export class TitleScene extends Phaser.Scene {
     this.cameras.main.once(
       Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE,
       () => {
-        if (this.#selectedMenuOption === MAIN_MENU_OPTIONS.NEW_GAME) {
-          this.scene.start(SCENE_KEYS.WORLD_SCENE);
-          return;
-        }
-
-        if (this.#selectedMenuOption === MAIN_MENU_OPTIONS.CONTINUE) {
-          this.scene.start(SCENE_KEYS.WORLD_SCENE);
-          return;
-        }
-
         if (this.#selectedMenuOption === MAIN_MENU_OPTIONS.OPTIONS) {
           this.scene.start(SCENE_KEYS.OPTIONS_SCENE);
           return;
         }
-      }
+
+        if (this.#selectedMenuOption === MAIN_MENU_OPTIONS.NEW_GAME) {
+          dataManager.startNewGame();
+        }
+
+        this.scene.start(SCENE_KEYS.WORLD_SCENE);
+      },
     );
 
     this.#controls = new Controls(this);
@@ -189,7 +187,7 @@ export class TitleScene extends Phaser.Scene {
     switch (this.#selectedMenuOption) {
       case MAIN_MENU_OPTIONS.NEW_GAME:
         this.#mainMenuCursorPhaserImageGameObject.setY(
-          PLAYER_INPUT_CURSOR_POSITION.y
+          PLAYER_INPUT_CURSOR_POSITION.y,
         );
         break;
       case MAIN_MENU_OPTIONS.CONTINUE:
