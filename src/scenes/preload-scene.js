@@ -6,6 +6,7 @@ import {
   DATA_ASSETS_KEYS,
   HEALTH_BAR_ASSET_KEYS,
   MONSTER_ASSET_KEYS,
+  MONSTER_PARTY_ASSET_KEYS,
   TITLE_ASSET_KEYS,
   UI_ASSETS_KEYS,
   WORLD_ASSET_KEYS,
@@ -16,8 +17,9 @@ import { KENNEY_FUTURE_NARROW_FONT_NAME } from "../assets/font-keys.js";
 import { WebFontFileLoader } from "../assets/web-font-file-loader.js";
 import { DataUtils } from "../utils/data-utils.js";
 import { dataManager } from "../utils/data-manager.js";
+import { BaseScene } from "./base-scene.js";
 
-export class PreloadScene extends Phaser.Scene {
+export class PreloadScene extends BaseScene {
   constructor() {
     super({
       key: SCENE_KEYS.PRELOAD_SCENE,
@@ -25,10 +27,9 @@ export class PreloadScene extends Phaser.Scene {
     });
   }
 
-  init() {}
-
   preload() {
-    console.log(`[${PreloadScene.name}:preload] invoked`);
+    super.preload();
+    // console.log(`[${PreloadScene.name}:preload] invoked`);
 
     const monsterTamerAssetPath = "assets/images/monster-tamer";
     const kenneysAssetPath = "assets/images/kenneys-assets";
@@ -110,6 +111,16 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image(
       UI_ASSETS_KEYS.MENU_BACKGROUND_GREEN,
       `${kenneysAssetPath}/ui-space-expansion/glassPanel_green.png`,
+    );
+
+    this.load.image(
+      UI_ASSETS_KEYS.BLUE_BUTTON,
+      `${kenneysAssetPath}/ui-pack/blue_button01.png`,
+    );
+
+    this.load.image(
+      UI_ASSETS_KEYS.BLUE_BUTTON_SELECTED,
+      `${kenneysAssetPath}/ui-pack/blue_button00.png`,
     );
 
     //Cargando nuestra data JSON
@@ -204,12 +215,23 @@ export class PreloadScene extends Phaser.Scene {
       TITLE_ASSET_KEYS.TITLE,
       `${monsterTamerAssetPath}/ui/title/title_text.png`,
     );
+
+    //ui components for monster party
+    this.load.image(
+      MONSTER_PARTY_ASSET_KEYS.PARTY_BACKGROUND,
+      `${monsterTamerAssetPath}/ui/background.png`,
+    );
+    this.load.image(
+      MONSTER_PARTY_ASSET_KEYS.MONSTER_DETAILS_BACKGROUND,
+      `${monsterTamerAssetPath}/ui/monster-details-background.png`,
+    );
   }
 
   create() {
+    super.create();
     this.#createAnimations();
     dataManager.loadData();
-    this.scene.start(SCENE_KEYS.TITLE_SCENE);
+    this.scene.start(SCENE_KEYS.MONSTER_PARTY_SCENE);
   }
 
   #createAnimations() {

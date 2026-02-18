@@ -28,9 +28,9 @@ export class HealthBar {
    * @param {number} x
    * @param {number} y
    */
-  constructor(scene, x, y) {
+  constructor(scene, x, y, width = 360) {
     this.#scene = scene;
-    this.#fullWidth = 360;
+    this.#fullWidth = width;
     this.#scaleY = 0.7;
     this.#healthBarContainer = this.#scene.add.container(x, y, []);
     this.#createHealthBarShadowImages(x, y);

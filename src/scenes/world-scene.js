@@ -11,6 +11,7 @@ import { CANNOT_READ_SIGN_TEXT, SAMPLE_TEXT } from "../utils/text-utils.js";
 import { DialogUi } from "../world/dialog-ui.js";
 import { NPC } from "../world/characters/npc.js";
 import { Menu } from "../world/menu/menu.js";
+import { BaseScene } from "./base-scene.js";
 
 const TILED_SIGN_PROPERTY = Object.freeze({
   MESSAGE: "message",
@@ -36,11 +37,9 @@ const TILED_NPC_PROPERTY = Object.freeze({
  * @property {any} value
  */
 
-export class WorldScene extends Phaser.Scene {
+export class WorldScene extends BaseScene {
   /**@type {Player} */
   #player;
-  /**@type {Controls} */
-  #controls;
   /**@type {Phaser.Tilemaps.TilemapLayer} */
   #encounterLayer;
   /**@type {boolean} */
@@ -64,12 +63,13 @@ export class WorldScene extends Phaser.Scene {
   }
 
   init() {
+    super.init();
     this.#wildMonsterEncounter = false;
     this.#npcPlayerIsInteractingWith = undefined;
   }
 
   create() {
-    console.log(`[${WorldScene.name}:create] invoked`);
+    super.create();
 
     const x = 6 * TILE_SIZE;
     const y = 22 * TILE_SIZE;
@@ -171,8 +171,6 @@ export class WorldScene extends Phaser.Scene {
     //Crear Foreground para profundidad
     this.add.image(0, 0, WORLD_ASSET_KEYS.WORLD_FOREGROUND, 0).setOrigin(0);
 
-    this.#controls = new Controls(this);
-
     //Crear Ui de Dialogo
     this.#dialogUi = new DialogUi(this, 1288);
 
@@ -231,16 +229,18 @@ export class WorldScene extends Phaser.Scene {
    * @returns {void}
    */
   update(time) {
+    super.update();
+
     if (this.#wildMonsterEncounter) {
       this.#player.update(time);
       return;
     }
 
-    const wasSpaceKeyPressed = this.#controls.wasSpaceKeyPressed();
+    const wasSpaceKeyPressed = this._controls.wasSpaceKeyPressed();
     const selectedDirectionHeldDown =
-      this.#controls.getDirectionKeyPressedDown();
+      this._controls.getDirectionKeyPressedDown();
     const selectedDirectionPressedOnce =
-      this.#controls.getDirectionKeyJustPressed();
+      this._controls.getDirectionKeyJustPressed();
 
     if (
       selectedDirectionHeldDown !== DIRECTION.NONE &&
@@ -253,7 +253,7 @@ export class WorldScene extends Phaser.Scene {
       this.#handlePlayerInteraction();
     }
 
-    if (this.#controls.wasEnterKeyPressed() && !this.#player.isMoving) {
+    if (this._controls.wasEnterKeyPressed() && !this.#player.isMoving) {
       if (this.#dialogUi.isVisible) {
         return;
       }
@@ -287,7 +287,7 @@ export class WorldScene extends Phaser.Scene {
         }
       }
 
-      if (this.#controls.wasBackKeyPressed()) {
+      if (this._controls.wasBackKeyPressed()) {
         this.#menu.hide();
       }
     }
@@ -370,7 +370,7 @@ export class WorldScene extends Phaser.Scene {
 
   #isPlayerInputLocked() {
     return (
-      this.#controls.isInputLocked ||
+      this._controls.isInputLocked ||
       this.#dialogUi.isVisible ||
       this.#menu.isVisible
     );

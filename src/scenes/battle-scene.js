@@ -14,6 +14,7 @@ import { Controls } from "../utils/controls.js";
 import { DATA_MANAGER_STORE_KEYS, dataManager } from "../utils/data-manager.js";
 import { createSceneTransition } from "../utils/scene-transition.js";
 import { StateMachine } from "../utils/state-machine.js";
+import { BaseScene } from "./base-scene.js";
 import { SCENE_KEYS } from "./scene-keys.js";
 
 const BATTLE_STATES = Object.freeze({
@@ -28,11 +29,11 @@ const BATTLE_STATES = Object.freeze({
   FLEE_ATTEMPT: "FLEE_ATTEMPT",
 });
 
-export class BattleScene extends Phaser.Scene {
+export class BattleScene extends BaseScene {
   /** @type {BattleMenu} */
   #battleMenu;
-  /**@type {Controls} */
-  #controls;
+  // /**@type {Controls} */
+  // _controls;
   /**@type {EnemyBattleMonster} */
   #activeEnemyMonster;
   /**@type {PlayerBattleMonster} */
@@ -54,6 +55,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   init() {
+    super.init();
     this.#activePlayerAttackIndex = -1;
 
     const chosenBattleSceneOption = dataManager.store.get(
@@ -74,6 +76,7 @@ export class BattleScene extends Phaser.Scene {
   preload() {}
 
   create() {
+    super.create();
     //Crear el fondo principal
     const background = new Background(this);
     background.showForest();
@@ -116,15 +119,16 @@ export class BattleScene extends Phaser.Scene {
     this.#createBattleStateMachine();
     this.#attackManager = new AttackManager(this, this.#skipAnimations);
 
-    this.#controls = new Controls(this);
-    this.#controls.lockInput = true;
+    this._controls.lockInput = true;
   }
 
   update() {
-    this.#battleStateMachine.update();
-    const wasSpaceKeyPressed = this.#controls.wasSpaceKeyPressed();
+    super.update();
 
-    if (this.#controls.isInputLocked) return;
+    this.#battleStateMachine.update();
+    const wasSpaceKeyPressed = this._controls.wasSpaceKeyPressed();
+
+    if (this._controls.isInputLocked) return;
 
     //Limitar el input basado en el Battle State Actual
     //Si no estamos en el battle state adecuado, hacer return y no procesar el input
@@ -173,12 +177,12 @@ export class BattleScene extends Phaser.Scene {
       return;
     }
 
-    if (this.#controls.wasBackKeyPressed()) {
+    if (this._controls.wasBackKeyPressed()) {
       this.#battleMenu.handlePlayerInput("CANCEL");
       return;
     }
 
-    const selectedDirection = this.#controls.getDirectionKeyJustPressed();
+    const selectedDirection = this._controls.getDirectionKeyJustPressed();
 
     if (selectedDirection !== DIRECTION.NONE) {
       this.#battleMenu.handlePlayerInput(selectedDirection);
@@ -318,7 +322,7 @@ export class BattleScene extends Phaser.Scene {
           this.#activeEnemyMonster.playMonsterHealthBarAppearAnimation(
             () => undefined,
           );
-          this.#controls.lockInput = false;
+          this._controls.lockInput = false;
           this.#battleMenu.updateInfoPaneMessagesAndWaitForInput(
             [`wild ${this.#activeEnemyMonster.name} appeared!`],
             () => {

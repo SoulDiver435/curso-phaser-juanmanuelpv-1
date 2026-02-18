@@ -2,10 +2,10 @@ import { TITLE_ASSET_KEYS, UI_ASSETS_KEYS } from "../assets/asset-keys.js";
 import { KENNEY_FUTURE_NARROW_FONT_NAME } from "../assets/font-keys.js";
 import { DIRECTION } from "../common/direction.js";
 import Phaser from "../lib/phaser.js";
-import { Controls } from "../utils/controls.js";
 import { DATA_MANAGER_STORE_KEYS, dataManager } from "../utils/data-manager.js";
 import { exhaustiveGuard } from "../utils/guard.js";
 import { NineSlice } from "../utils/nine-slice.js";
+import { BaseScene } from "./base-scene.js";
 import { SCENE_KEYS } from "./scene-keys.js";
 
 /**@type {Phaser.Types.GameObjects.Text.TextStyle} */
@@ -30,11 +30,9 @@ const MAIN_MENU_OPTIONS = Object.freeze({
   OPTIONS: "OPTIONS",
 });
 
-export class TitleScene extends Phaser.Scene {
+export class TitleScene extends BaseScene {
   /**@type {Phaser.GameObjects.Image} */
   #mainMenuCursorPhaserImageGameObject;
-  /**@type {Controls} */
-  #controls;
   /**@type {MainMenuOptions} */
   #selectedMenuOption;
   /**@type {Boolean} */
@@ -49,7 +47,7 @@ export class TitleScene extends Phaser.Scene {
   }
 
   init() {
-    console.log(`[${TitleScene.name}:init] invoked`);
+    super.init();
 
     this.#nineSliceMenu = new NineSlice({
       cornetCutSize: 32,
@@ -59,7 +57,7 @@ export class TitleScene extends Phaser.Scene {
   }
 
   create() {
-    console.log(`[${TitleScene.name}:create] invoked`);
+    super.create();
 
     this.#selectedMenuOption = MAIN_MENU_OPTIONS.NEW_GAME;
     this.#isContinueButtonEnabled =
@@ -156,21 +154,23 @@ export class TitleScene extends Phaser.Scene {
       },
     );
 
-    this.#controls = new Controls(this);
+    
   }
 
   update() {
-    if (this.#controls.isInputLocked) return;
+    super.update();
+    
+    if (this._controls.isInputLocked) return;
 
-    const wasSpaceKeyPressed = this.#controls.wasSpaceKeyPressed();
+    const wasSpaceKeyPressed = this._controls.wasSpaceKeyPressed();
 
     if (wasSpaceKeyPressed) {
       this.cameras.main.fadeOut(500, 0, 0, 0);
-      this.#controls.lockInput = true;
+      this._controls.lockInput = true;
       return;
     }
 
-    const selectedDirection = this.#controls.getDirectionKeyJustPressed();
+    const selectedDirection = this._controls.getDirectionKeyJustPressed();
 
     if (selectedDirection !== DIRECTION.NONE) {
       this.#moveMenuSelectCursor(selectedDirection);

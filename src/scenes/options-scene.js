@@ -13,6 +13,7 @@ import { Controls } from "../utils/controls.js";
 import { DATA_MANAGER_STORE_KEYS, dataManager } from "../utils/data-manager.js";
 import { exhaustiveGuard } from "../utils/guard.js";
 import { NineSlice } from "../utils/nine-slice.js";
+import { BaseScene } from "./base-scene.js";
 import { SCENE_KEYS } from "./scene-keys.js";
 
 /**@type {Phaser.Types.GameObjects.Text.TextStyle} */
@@ -38,7 +39,7 @@ const TEXT_FONT_COLORS = Object.freeze({
   SELECTED: "#ff2222",
 });
 
-export class OptionsScene extends Phaser.Scene {
+export class OptionsScene extends BaseScene {
   /**@type {Phaser.GameObjects.Container} */
   #mainContainer;
   /**@type {NineSlice} */
@@ -63,8 +64,6 @@ export class OptionsScene extends Phaser.Scene {
   #selectedOptionInfoMessageTextGameObject;
   /**@type {Phaser.GameObjects.Rectangle} */
   #optionsMenuCursor;
-  /**@type {Controls} */
-  #controls;
   /**@type {import("../common/options.js").OptionMenuOptions} */
   #selectedOptionMenu;
 
@@ -87,7 +86,8 @@ export class OptionsScene extends Phaser.Scene {
     });
   }
   init() {
-    console.log(`[${OptionsScene.name}:init] invoked`);
+    super.init();
+
     this.#nineSliceMainContainer = new NineSlice({
       cornetCutSize: 32,
       textureManager: this.sys.textures,
@@ -121,7 +121,7 @@ export class OptionsScene extends Phaser.Scene {
   }
 
   create() {
-    console.log(`[${OptionsScene.name}:create] invoked`);
+    super.create();
 
     const { width, height } = this.scale;
     const optionMenuWidth = width - 200;
@@ -258,7 +258,7 @@ export class OptionsScene extends Phaser.Scene {
     this.#updateVolumeOptionSlider();
     this.#updateMenuColorDisplayText();
 
-    this.#controls = new Controls(this);
+    // this._controls = new Controls(this);
 
     this.cameras.main.once(
       Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE,
@@ -269,25 +269,26 @@ export class OptionsScene extends Phaser.Scene {
   }
 
   update() {
-    if (this.#controls.isInputLocked) return;
+    super.update();
+    if (this._controls.isInputLocked) return;
 
-    if (this.#controls.wasBackKeyPressed()) {
-      this.#controls.lockInput = true;
+    if (this._controls.wasBackKeyPressed()) {
+      this._controls.lockInput = true;
       this.cameras.main.fadeOut(500, 0, 0, 0);
       return;
     }
 
     if (
-      this.#controls.wasSpaceKeyPressed() &&
+      this._controls.wasSpaceKeyPressed() &&
       this.#selectedOptionMenu === OPTION_MENU_OPTIONS.CONFIRM
     ) {
-      this.#controls.lockInput = true;
-      this.#updateOptionDataInDataManager()
+      this._controls.lockInput = true;
+      this.#updateOptionDataInDataManager();
       this.cameras.main.fadeOut(500, 0, 0, 0);
       return;
     }
 
-    const selectedDirection = this.#controls.getDirectionKeyJustPressed();
+    const selectedDirection = this._controls.getDirectionKeyJustPressed();
 
     if (selectedDirection !== DIRECTION.NONE) {
       this.#moveOptionMenuCursor(selectedDirection);
@@ -308,7 +309,7 @@ export class OptionsScene extends Phaser.Scene {
         this.#selectedMenuColorOption,
     });
 
-    dataManager.saveData()
+    dataManager.saveData();
   }
 
   /**
