@@ -15,12 +15,19 @@ export class BaseScene extends Phaser.Scene {
     }
   }
 
-  init() {
-     this._log(`[${this.constructor.name}:init] invoked`);
+  init(data) {
+    if (data) {
+      this._log(
+        `[${this.constructor.name}:init] invoked, data provided : ${JSON.stringify(data)}`,
+      );
+      return;
+    }
+
+    this._log(`[${this.constructor.name}:init] invoked`);
   }
 
   preload() {
-     this._log(`[${this.constructor.name}:preload] invoked`);
+    this._log(`[${this.constructor.name}:preload] invoked`);
   }
 
   create() {
@@ -31,6 +38,19 @@ export class BaseScene extends Phaser.Scene {
 
   update(time) {
     //
+  }
+
+  handleSceneResume(sys, data) {
+    this._controls.lockInput = false;
+
+    if (data) {
+      this._log(
+        `[${this.constructor.name}:handleSceneResume] invoked, data provided ${JSON.stringify(data)}`,
+      );
+      return;
+    }
+
+    this._log(`[${this.constructor.name}:handleSceneResume] invoked`);
   }
 
   _log(message) {

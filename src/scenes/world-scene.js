@@ -177,6 +177,8 @@ export class WorldScene extends BaseScene {
     //Crear Menú
     this.#menu = new Menu(this);
 
+    this.events.on(Phaser.Scenes.Events.RESUME, this.handleSceneResume, this);
+
     this.cameras.main.fadeIn(1000, 0, 0, 0);
     dataManager.store.set(DATA_MANAGER_STORE_KEYS.GAME_STARTED, true);
   }
@@ -274,7 +276,6 @@ export class WorldScene extends BaseScene {
       if (wasSpaceKeyPressed) {
         this.#menu.handlePlayerInput("OK");
 
-        //TODO handle other selected menu options
         switch (this.#menu.selectedMenuOption) {
           case "SAVE":
             this.#menu.hide();
@@ -284,7 +285,17 @@ export class WorldScene extends BaseScene {
           case "EXIT":
             this.#menu.hide();
             break;
+          case "MONSTERS":
+            const sceneDataToPass = {
+              previousSceneName: SCENE_KEYS.WORLD_SCENE,
+            };
+
+            this.scene.launch(SCENE_KEYS.MONSTER_PARTY_SCENE, sceneDataToPass);
+            this.scene.pause();
+            break;
         }
+
+        //TODO handle other selected menu options
       }
 
       if (this._controls.wasBackKeyPressed()) {
@@ -470,4 +481,10 @@ export class WorldScene extends BaseScene {
       this.#player.direction,
     );
   }
+
+  // #handleResume(sys, data) {
+  //   console.log(`[${WorldScene.name}: handleResume] Scene has been resumed`);
+
+  //   console.log(`sys:`, sys, `data:`, data);
+  // }
 }

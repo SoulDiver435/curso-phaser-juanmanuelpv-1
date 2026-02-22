@@ -64,7 +64,7 @@ const initialState = {
         assetFrame: 0,
         currentHp: 25,
         maxHp: 25,
-        attackIds: [2, 1],
+        attackIds: [2, 1, 1, 2],
         baseAttack: 15,
         currentLevel: 5,
       },

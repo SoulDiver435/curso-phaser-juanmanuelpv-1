@@ -64,7 +64,11 @@ export class Menu {
     this.#padding = 4;
     this.#width = 300;
 
-    this.#availableMenuOptions = [MENU_OPTIONS.SAVE, MENU_OPTIONS.EXIT];
+    this.#availableMenuOptions = [
+      MENU_OPTIONS.MONSTERS,
+      MENU_OPTIONS.SAVE,
+      MENU_OPTIONS.EXIT,
+    ];
     this.#menuOptionsTextGameObjects = [];
     this.#selectedMenuOptionIndex = 0;
 
