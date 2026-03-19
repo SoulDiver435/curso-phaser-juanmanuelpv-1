@@ -66,6 +66,7 @@ export class Menu {
 
     this.#availableMenuOptions = [
       MENU_OPTIONS.MONSTERS,
+      MENU_OPTIONS.BAG,
       MENU_OPTIONS.SAVE,
       MENU_OPTIONS.EXIT,
     ];

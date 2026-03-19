@@ -1,5 +1,6 @@
 import Phaser from "./lib/phaser.js";
 import { BattleScene } from "./scenes/battle-scene.js";
+import { InventoryScene } from "./scenes/inventory-scene.js";
 import { MonsterDetailsScene } from "./scenes/monster-details-scene.js";
 import { MonsterPartyScene } from "./scenes/monster-party-scene.js";
 import { OptionsScene } from "./scenes/options-scene.js";
@@ -32,5 +33,6 @@ game.scene.add(SCENE_KEYS.OPTIONS_SCENE, OptionsScene);
 game.scene.add(SCENE_KEYS.TEST_SCENE, TestScene);
 game.scene.add(SCENE_KEYS.MONSTER_PARTY_SCENE, MonsterPartyScene);
 game.scene.add(SCENE_KEYS.MONSTER_DETAILS_SCENE, MonsterDetailsScene);
+game.scene.add(SCENE_KEYS.INVENTORY_SCENE, InventoryScene);
 
 game.scene.start(SCENE_KEYS.PRELOAD_SCENE, PreloadScene);

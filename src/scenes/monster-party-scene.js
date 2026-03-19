@@ -7,6 +7,7 @@ import {
 import { KENNEY_FUTURE_NARROW_FONT_NAME } from "../assets/font-keys.js";
 import { HealthBar } from "../battle/ui/health-bar.js";
 import { DIRECTION } from "../common/direction.js";
+import { ITEM_EFFECT } from "../types/typedef.js";
 import { DATA_MANAGER_STORE_KEYS, dataManager } from "../utils/data-manager.js";
 import { exhaustiveGuard } from "../utils/guard.js";
 import { BaseScene } from "./base-scene.js";
@@ -32,6 +33,13 @@ const MONSTER_PARTY_POSITIONS = Object.freeze({
   increment: 150,
 });
 
+/**
+ * @typedef MonsterPartySceneData
+ * @type {object}
+ * @property {string} previousSceneName
+ * @property {import("../types/typedef.js").Item} [itemSelected]
+ */
+
 export class MonsterPartyScene extends BaseScene {
   /**@type {Phaser.GameObjects.Image[]} */
   #monsterPartyBackgrounds;
@@ -47,14 +55,20 @@ export class MonsterPartyScene extends BaseScene {
   #selectedPartyMonsterIndex;
   /**@type {import("../types/typedef.js").Monster[]} */
   #monsters;
-
+  /**@type {MonsterPartySceneData} */
   #sceneData;
+  /**@type {boolean} */
+  #waitingForInput;
   constructor() {
     super({
       key: SCENE_KEYS.MONSTER_PARTY_SCENE,
     });
   }
 
+  /**
+   * @param {MonsterPartySceneData} data
+   * @returns {void}
+   */
   init(data) {
     super.init(data);
 
@@ -69,8 +83,12 @@ export class MonsterPartyScene extends BaseScene {
     this.#monsters = dataManager.store.get(
       DATA_MANAGER_STORE_KEYS.MONSTERS_IN_PARTY,
     );
+    this.#waitingForInput = false;
   }
 
+  /**
+   * @returns {void}
+   */
   create() {
     super.create();
 
@@ -183,20 +201,42 @@ export class MonsterPartyScene extends BaseScene {
     if (this._controls.isInputLocked) return;
 
     if (this._controls.wasBackKeyPressed()) {
-      this.#goBackToPreviousScene();
+      if (this.#waitingForInput) {
+        this.#updateInfoContainerText();
+        this.#waitingForInput = false;
+        return;
+      }
+
+      this.#goBackToPreviousScene(false);
       return;
     }
 
     const wasSpaceKeyPressed = this._controls.wasSpaceKeyPressed();
 
     if (wasSpaceKeyPressed) {
+      if (this.#waitingForInput) {
+        this.#updateInfoContainerText();
+        this.#waitingForInput = false;
+        return;
+      }
+
       if (this.#selectedPartyMonsterIndex === -1) {
-        this.#goBackToPreviousScene();
+        this.#goBackToPreviousScene(false);
+        return;
+      }
+
+      //Handle input based on what player intention was (use items, view monster detailes, select monster to switch...)
+      if (
+        this.#sceneData.previousSceneName === SCENE_KEYS.INVENTORY_SCENE &&
+        this.#sceneData.itemSelected
+      ) {
+        this.#handleItemUsed();
         return;
       }
 
       this._controls.lockInput = true;
-      
+
+      /**@type {import("./monster-details-scene.js").MonsterDetailsSceneData} */
       const sceneDataToPass = {
         monster: this.#monsters[this.#selectedPartyMonsterIndex],
       };
@@ -205,6 +245,8 @@ export class MonsterPartyScene extends BaseScene {
       this.scene.pause(SCENE_KEYS.MONSTER_PARTY_SCENE);
       return;
     }
+
+    if (this.#waitingForInput) return;
 
     const selectedDirection = this._controls.getDirectionKeyJustPressed();
 
@@ -334,7 +376,11 @@ export class MonsterPartyScene extends BaseScene {
     return container;
   }
 
-  #goBackToPreviousScene() {
+  /**
+   * @param {boolean} itemUsed
+   * @returns {void}
+   */
+  #goBackToPreviousScene(itemUsed) {
     this._controls.lockInput = true;
 
     // const sceneDataToPass = {
@@ -342,8 +388,9 @@ export class MonsterPartyScene extends BaseScene {
     // };
 
     this.scene.stop(SCENE_KEYS.MONSTER_PARTY_SCENE);
-    this.scene.resume(this.#sceneData.previousSceneName);
+    this.scene.resume(this.#sceneData.previousSceneName , {itemUsed});
   }
+
   /**
    *
    * @param {import("../common/direction.js").Direction} direction
@@ -403,5 +450,82 @@ export class MonsterPartyScene extends BaseScene {
       if (index === this.#selectedPartyMonsterIndex) return;
       obj.setAlpha(0.7);
     });
+  }
+
+  /**
+   *
+   * @returns {void}
+   */
+  #handleItemUsed() {
+    switch (this.#sceneData.itemSelected.effect) {
+      case ITEM_EFFECT.HEAL_30:
+        this.#handleHealItemUsed(30);
+        break;
+      default:
+        exhaustiveGuard(this.#sceneData.itemSelected.effect);
+    }
+  }
+
+  /**
+   *
+   * @param {number} amount
+   * @returns {void}
+   */
+  #handleHealItemUsed(amount) {
+    //validate that the monster is not fainted
+    if (this.#monsters[this.#selectedPartyMonsterIndex].currentHp === 0) {
+      this.#infoTextGameObject.setText(`Cannot heal fainted monster`);
+      this.#waitingForInput = true;
+      return;
+    }
+
+    //validate that the monster is not already fully healed
+    if (
+      this.#monsters[this.#selectedPartyMonsterIndex].currentHp ===
+      this.#monsters[this.#selectedPartyMonsterIndex].maxHp
+    ) {
+      this.#infoTextGameObject.setText(`Monster is already fully healed`);
+      this.#waitingForInput = true;
+      return;
+    }
+
+    //otherwise, heal monster by the amount
+    this._controls.lockInput = true;
+    this.#monsters[this.#selectedPartyMonsterIndex].currentHp += amount;
+
+    if (
+      this.#monsters[this.#selectedPartyMonsterIndex].currentHp >
+      this.#monsters[this.#selectedPartyMonsterIndex].maxHp
+    ) {
+      this.#monsters[this.#selectedPartyMonsterIndex].currentHp =
+        this.#monsters[this.#selectedPartyMonsterIndex].maxHp;
+    }
+
+    this.#infoTextGameObject.setText(`Healed monster by ${amount} HP`);
+
+    this.#healthBars[
+      this.#selectedPartyMonsterIndex
+    ].setMeterPercentageAnimated(
+      this.#monsters[this.#selectedPartyMonsterIndex].currentHp /
+        this.#monsters[this.#selectedPartyMonsterIndex].maxHp,
+      {
+        callback: () => {
+          this.#healthBarTextGameObjects[
+            this.#selectedPartyMonsterIndex
+          ].setText(
+            `${this.#monsters[this.#selectedPartyMonsterIndex].currentHp} / ${this.#monsters[this.#selectedPartyMonsterIndex].maxHp}`,
+          );
+
+          dataManager.store.set(
+            DATA_MANAGER_STORE_KEYS.MONSTERS_IN_PARTY,
+            this.#monsters,
+          );
+
+          this.time.delayedCall(700, () => {
+            this.#goBackToPreviousScene(true);
+          });
+        },
+      },
+    );
   }
 }

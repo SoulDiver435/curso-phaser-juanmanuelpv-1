@@ -177,8 +177,6 @@ export class WorldScene extends BaseScene {
     //Crear Menú
     this.#menu = new Menu(this);
 
-    this.events.on(Phaser.Scenes.Events.RESUME, this.handleSceneResume, this);
-
     this.cameras.main.fadeIn(1000, 0, 0, 0);
     dataManager.store.set(DATA_MANAGER_STORE_KEYS.GAME_STARTED, true);
   }
@@ -278,20 +276,41 @@ export class WorldScene extends BaseScene {
 
         switch (this.#menu.selectedMenuOption) {
           case "SAVE":
-            this.#menu.hide();
-            dataManager.saveData();
-            this.#dialogUi.showDialogModal(["Game progress have been saved"]);
+            {
+              this.#menu.hide();
+              dataManager.saveData();
+              this.#dialogUi.showDialogModal(["Game progress have been saved"]);
+            }
             break;
           case "EXIT":
-            this.#menu.hide();
+            {
+              this.#menu.hide();
+            }
             break;
           case "MONSTERS":
-            const sceneDataToPass = {
-              previousSceneName: SCENE_KEYS.WORLD_SCENE,
-            };
+            {
+              /**@type {import("./monster-party-scene.js").MonsterPartySceneData} */
+              const sceneDataToPass = {
+                previousSceneName: SCENE_KEYS.WORLD_SCENE,
+              };
 
-            this.scene.launch(SCENE_KEYS.MONSTER_PARTY_SCENE, sceneDataToPass);
-            this.scene.pause();
+              this.scene.launch(
+                SCENE_KEYS.MONSTER_PARTY_SCENE,
+                sceneDataToPass,
+              );
+              this.scene.pause();
+            }
+            break;
+          case "BAG":
+            {
+              /**@type {import("./inventory-scene.js").InventorySceneData} */
+              const sceneDataToPass = {
+                previousSceneName: SCENE_KEYS.WORLD_SCENE,
+              };
+
+              this.scene.launch(SCENE_KEYS.INVENTORY_SCENE, sceneDataToPass);
+              this.scene.pause();
+            }
             break;
         }
 

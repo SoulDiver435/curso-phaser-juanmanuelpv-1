@@ -3,6 +3,7 @@ import {
   UI_ASSETS_KEYS,
 } from "../../../assets/asset-keys.js";
 import { DIRECTION } from "../../../common/direction.js";
+import { SCENE_KEYS } from "../../../scenes/scene-keys.js";
 import { dataManager } from "../../../utils/data-manager.js";
 import { exhaustiveGuard } from "../../../utils/guard.js";
 import { animateText } from "../../../utils/text-utils.js";
@@ -67,6 +68,10 @@ export class BattleMenu {
   #skipAnimations;
   /** @type {boolean} */
   #queuedMessageAnimationPlaying;
+  /** @type {boolean} */
+  #usedItem;
+  /** @type {boolean} */
+  #fleeAttempt;
 
   /**
    *
@@ -85,10 +90,31 @@ export class BattleMenu {
     this.#selectedAttackIndex = undefined;
     this.#skipAnimations = skipBattleAnimations;
     this.#queuedMessageAnimationPlaying = false;
+    this.#usedItem = false;
+    this.#fleeAttempt = false;
+
     this.#createMainInfoPane();
     this.#createMainBattleMenu();
     this.#createMonsterAttackSubMenu();
     this.#createPlayerInputCursor();
+
+    this.#scene.events.on(
+      Phaser.Scenes.Events.RESUME,
+      this.#handleSceneResume,
+      this,
+    );
+
+    this.#scene.events.once(
+      Phaser.Scenes.Events.SHUTDOWN,
+      () => {
+        this.#scene.events.off(
+          Phaser.Scenes.Events.RESUME,
+          this.#handleSceneResume,
+          this,
+        );
+      },
+      this,
+    );
 
     this.initializingBattle = false;
   }
@@ -99,6 +125,16 @@ export class BattleMenu {
       return this.#selectedAttackIndex;
     }
     return undefined;
+  }
+
+  /** @type {boolean} */
+  get wasItemUsed() {
+    return this.#usedItem;
+  }
+
+  /** @type {boolean} */
+  get isAttemptingToFlee() {
+    return this.#fleeAttempt;
   }
 
   showMainBattleMenu() {
@@ -113,7 +149,13 @@ export class BattleMenu {
       BATTLE_MENU_CURSOR_POS.y,
     );
 
+    if (this.isAttemptingToFlee) {
+      this.#mainBattleMenuCursorPhaserImageGameObject.setPosition(228, 86);
+    }
+
     this.#selectedAttackIndex = undefined;
+    this.#usedItem = false;
+    this.#fleeAttempt = false;
   }
 
   hideMainBattleMenu() {
@@ -626,16 +668,14 @@ export class BattleMenu {
     }
 
     if (this.#selectedBattleMenuOption === BATTLE_MENU_OPTIONS.ITEM) {
-      //TODO add feature un future update
-
       this.#activeBattleMenu = ACTIVE_BATTLE_MENU.BATTLE_ITEM;
+      /**@type {import("../../../scenes/inventory-scene.js").InventorySceneData} */
+      const sceneDataToPass = {
+        previousSceneName: SCENE_KEYS.BATTLE_SCENE,
+      };
 
-      this.updateInfoPaneMessagesAndWaitForInput(
-        ["Your bag is empty..."],
-        () => {
-          this.#switchToMainBattleMenu();
-        },
-      );
+      this.#scene.scene.launch(SCENE_KEYS.INVENTORY_SCENE, sceneDataToPass);
+      this.#scene.scene.pause(SCENE_KEYS.BATTLE_SCENE);
       return;
     }
 
@@ -652,14 +692,8 @@ export class BattleMenu {
     }
 
     if (this.#selectedBattleMenuOption === BATTLE_MENU_OPTIONS.FLEE) {
-      //TODO
       this.#activeBattleMenu = ACTIVE_BATTLE_MENU.BATTLE_FLEE;
-      this.updateInfoPaneMessagesAndWaitForInput(
-        ["You fail to run away..."],
-        () => {
-          this.#switchToMainBattleMenu();
-        },
-      );
+      this.#fleeAttempt = true;
       return;
     }
 
@@ -711,5 +745,27 @@ export class BattleMenu {
     });
 
     this.#userInputCursorPhaserTween.pause();
+  }
+
+  /**
+   * @param {Phaser.Scenes.Systems} sys
+   * @param {   import("../../../scenes/inventory-scene.js").InventorySceneItemUsedData} data
+   * @returns {void}
+   */
+  #handleSceneResume(sys, data) {
+    console.log(
+      `[${BattleMenu.name}:handleSceneResume] sene has been resumed, data provideed : ${JSON.stringify(data)}`,
+    );
+
+    if (!data || !data.itemUsed) {
+      this.#switchToMainBattleMenu();
+      return;
+    }
+
+    this.#usedItem = true;
+
+    this.updateInfoPaneMessagesAndWaitForInput([
+      `You used the following item : ${data.item.name} `,
+    ]);
   }
 }

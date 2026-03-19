@@ -46,6 +46,8 @@ export class BattleScene extends BaseScene {
   #attackManager;
   /**@type {boolean} */
   #skipAnimations;
+  /**@type {number} */
+  #activeEnemyAttackIndex;
 
   constructor() {
     super({
@@ -57,6 +59,7 @@ export class BattleScene extends BaseScene {
   init() {
     super.init();
     this.#activePlayerAttackIndex = -1;
+    this.#activeEnemyAttackIndex = -1;
 
     const chosenBattleSceneOption = dataManager.store.get(
       DATA_MANAGER_STORE_KEYS.OPTIONS_BATTLE_SCENE_ANIMATIONS,
@@ -93,7 +96,7 @@ export class BattleScene extends BaseScene {
         assetFrame: 0,
         currentHp: 25,
         maxHp: 25,
-        attackIds: [1],
+        attackIds: [1, 2],
         baseAttack: 5,
         currentLevel: 5,
       },
@@ -153,6 +156,18 @@ export class BattleScene extends BaseScene {
 
     if (wasSpaceKeyPressed) {
       this.#battleMenu.handlePlayerInput("OK");
+
+      //Check if the player used an item
+      if (this.#battleMenu.wasItemUsed) {
+        this.#battleStateMachine.setState(BATTLE_STATES.ENEMY_INPUT);
+        return;
+      }
+
+      //Check if the player attempted to flee
+      if (this.#battleMenu.isAttemptingToFlee) {
+        this.#battleStateMachine.setState(BATTLE_STATES.FLEE_ATTEMPT);
+        return;
+      }
 
       //chequear si el jugador seleccionó un ataque, y actualizar el texto
       if (this.#battleMenu.selectedAttack === undefined) {
@@ -222,14 +237,21 @@ export class BattleScene extends BaseScene {
       return;
     }
 
+    console.log(
+      `foe ${this.#activeEnemyMonster.name} used ${
+        this.#activeEnemyMonster.attacks[this.#activeEnemyAttackIndex].name
+      }`,
+    );
+
     this.#battleMenu.updateInfoPaneMessageNoInputRequired(
-      `for ${this.#activeEnemyMonster.name} used ${
-        this.#activeEnemyMonster.attacks[0].name
+      `foe ${this.#activeEnemyMonster.name} used ${
+        this.#activeEnemyMonster.attacks[this.#activeEnemyAttackIndex].name
       }`,
       () => {
         this.time.delayedCall(500, () => {
           this.#attackManager.playAttackAnimation(
-            this.#activeEnemyMonster.attacks[0].animationName,
+            this.#activeEnemyMonster.attacks[this.#activeEnemyAttackIndex]
+              .animationName,
             ATTACK_TARGET.PLAYER,
             () => {
               this.#activePlayerMonster.playTakeDamageAnimation(() => {
@@ -368,8 +390,10 @@ export class BattleScene extends BaseScene {
     this.#battleStateMachine.addState({
       name: BATTLE_STATES.ENEMY_INPUT,
       onEnter: () => {
-        //TODO - añadir en un futuro
         //Escoger un movimiento aleatorio para el monstruo enemigo y en el futuro implementar algún tipo de comportamiento IA
+        this.#activeEnemyAttackIndex =
+          this.#activeEnemyMonster.pickRandomMove();
+
         this.#battleStateMachine.setState(BATTLE_STATES.BATTLE);
       },
     });
@@ -385,6 +409,26 @@ export class BattleScene extends BaseScene {
         // Otra breve pausa =>
         // Actualización de barra HP con animación y breve pausa =>
         // Transición al otro monstruo y repetir proceso.
+
+        //Si el item fue usado, solo tener al enemigo atacando
+        if (this.#battleMenu.wasItemUsed) {
+          this.#activePlayerMonster.updateMonsterHealth(
+            dataManager.store.get(DATA_MANAGER_STORE_KEYS.MONSTERS_IN_PARTY)[0]
+              .currentHp,
+          );
+
+          this.time.delayedCall(500, () => {
+            this.#enemyAttack();
+          });
+          return;
+        }
+
+        if (this.#battleMenu.isAttemptingToFlee) {
+          this.time.delayedCall(500, () => {
+            this.#enemyAttack();
+          });
+          return;
+        }
 
         this.#playerAttack();
       },
@@ -407,10 +451,26 @@ export class BattleScene extends BaseScene {
     this.#battleStateMachine.addState({
       name: BATTLE_STATES.FLEE_ATTEMPT,
       onEnter: () => {
+        const randomNumber = Phaser.Math.Between(1, 10);
+
+        if (randomNumber > 5) {
+          //El jugador huyó con éxito
+          this.#battleMenu.updateInfoPaneMessagesAndWaitForInput(
+            [`You got away safely!`],
+            () => {
+              this.#battleStateMachine.setState(BATTLE_STATES.FINISHED);
+            },
+          );
+          return;
+        }
+
+        //El jugador falla en huir, el enmigo procede a atacar
         this.#battleMenu.updateInfoPaneMessagesAndWaitForInput(
-          [`You got away safely!`],
+          ["You failed to run away..."],
           () => {
-            this.#battleStateMachine.setState(BATTLE_STATES.FINISHED);
+            this.time.delayedCall(200, () => {
+              this.#battleStateMachine.setState(BATTLE_STATES.ENEMY_INPUT);
+            });
           },
         );
       },
@@ -419,6 +479,4 @@ export class BattleScene extends BaseScene {
     //Iniciar la State Machine
     this.#battleStateMachine.setState("INTRO");
   }
-
-
 }

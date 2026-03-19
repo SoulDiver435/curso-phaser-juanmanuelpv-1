@@ -58,7 +58,7 @@ export class EnemyBattleMonster extends BattleMonster {
     const endXPos = 0;
     this._phaserHealthBarGameContainer.setPosition(
       startXPos,
-      this._phaserHealthBarGameContainer.y
+      this._phaserHealthBarGameContainer.y,
     );
     this._phaserHealthBarGameContainer.setAlpha(1);
 
@@ -111,5 +111,12 @@ export class EnemyBattleMonster extends BattleMonster {
         callback();
       },
     });
+  }
+
+  /**
+   * @returns {number}
+   */
+  pickRandomMove() {
+    return Phaser.Math.Between(0, this._monsterAttacks.length - 1);
   }
 }

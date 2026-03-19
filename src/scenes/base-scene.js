@@ -34,12 +34,25 @@ export class BaseScene extends Phaser.Scene {
     this._log(`[${this.constructor.name}:create] invoked`);
 
     this._controls = new Controls(this);
+    this.events.on(Phaser.Scenes.Events.RESUME, this.handleSceneResume, this);
+    this.events.once(
+      Phaser.Scenes.Events.SHUTDOWN,
+      this.handleSceneCleanup,
+      this,
+    );
+
+    this.scene.bringToTop();
   }
 
   update(time) {
     //
   }
 
+  /**
+   * @param {Phaser.Scenes.Systems} sys
+   * @param {any | undefined} [data]
+   * @returns {void}
+   */
   handleSceneResume(sys, data) {
     this._controls.lockInput = false;
 
@@ -51,6 +64,11 @@ export class BaseScene extends Phaser.Scene {
     }
 
     this._log(`[${this.constructor.name}:handleSceneResume] invoked`);
+  }
+
+  handleSceneCleanup() {
+    this._log(`[${this.constructor.name}:handleSceneCleanup] invoked`);
+    this.events.off(Phaser.Scenes.Events.RESUME, this.handleSceneResume, this);
   }
 
   _log(message) {
