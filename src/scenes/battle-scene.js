@@ -12,6 +12,7 @@ import { BATTLE_SCENE_OPTIONS } from "../common/options.js";
 import Phaser from "../lib/phaser.js";
 import { Controls } from "../utils/controls.js";
 import { DATA_MANAGER_STORE_KEYS, dataManager } from "../utils/data-manager.js";
+import { DataUtils } from "../utils/data-utils.js";
 import { createSceneTransition } from "../utils/scene-transition.js";
 import { StateMachine } from "../utils/state-machine.js";
 import { BaseScene } from "./base-scene.js";
@@ -29,6 +30,12 @@ const BATTLE_STATES = Object.freeze({
   FLEE_ATTEMPT: "FLEE_ATTEMPT",
 });
 
+/**
+ * @typedef BattleSceneData
+ * @type {object}
+ * @property {import("../types/typedef.js").Monster[]} playerMonsters
+ * @property {import("../types/typedef.js").Monster[]} enemyMonsters
+ */
 export class BattleScene extends BaseScene {
   /** @type {BattleMenu} */
   #battleMenu;
@@ -48,6 +55,12 @@ export class BattleScene extends BaseScene {
   #skipAnimations;
   /**@type {number} */
   #activeEnemyAttackIndex;
+  /**@type {BattleSceneData} */
+  #sceneData;
+  /**@type {number} */
+  #activePlayerMonsterPartyIndex;
+  /**@type {boolean} */
+  #playerKnockedOut;
 
   constructor() {
     super({
@@ -56,10 +69,26 @@ export class BattleScene extends BaseScene {
     });
   }
 
-  init() {
-    super.init();
+  /**
+   * @param {BattleSceneData} data
+   * @returns {void}
+   */
+  init(data) {
+    super.init(data);
+    this.#sceneData = data;
+
+    if (Object.keys(data).length === 0) {
+      this.#sceneData = {
+        enemyMonsters: [DataUtils.getMonsterById(this, 2)],
+        playerMonsters: [
+          dataManager.store.get(DATA_MANAGER_STORE_KEYS.MONSTERS_IN_PARTY)[0],
+        ],
+      };
+    }
+
     this.#activePlayerAttackIndex = -1;
     this.#activeEnemyAttackIndex = -1;
+    this.#activePlayerMonsterPartyIndex = 0;
 
     const chosenBattleSceneOption = dataManager.store.get(
       DATA_MANAGER_STORE_KEYS.OPTIONS_BATTLE_SCENE_ANIMATIONS,
@@ -74,6 +103,7 @@ export class BattleScene extends BaseScene {
     }
 
     this.#skipAnimations = true;
+    this.#playerKnockedOut = false;
   }
 
   preload() {}
@@ -88,27 +118,14 @@ export class BattleScene extends BaseScene {
     //Monster del enemigo
     this.#activeEnemyMonster = new EnemyBattleMonster({
       scene: this,
-      monsterdetails: {
-        id: 2,
-        monsterId: 2,
-        name: MONSTER_ASSET_KEYS.CARNODUSK,
-        assetKey: MONSTER_ASSET_KEYS.CARNODUSK,
-        assetFrame: 0,
-        currentHp: 25,
-        maxHp: 25,
-        attackIds: [1, 2],
-        baseAttack: 5,
-        currentLevel: 5,
-      },
+      monsterdetails: this.#sceneData.enemyMonsters[0],
       skipBattleAnimations: this.#skipAnimations,
     });
 
     //Monster del Player
     this.#activePlayerMonster = new PlayerBattleMonster({
       scene: this,
-      monsterdetails: dataManager.store.get(
-        DATA_MANAGER_STORE_KEYS.MONSTERS_IN_PARTY,
-      )[0],
+      monsterdetails: this.#sceneData.playerMonsters[0],
       skipBattleAnimations: this.#skipAnimations,
     });
 
@@ -204,7 +221,16 @@ export class BattleScene extends BaseScene {
     }
   }
 
-  #playerAttack() {
+  /**
+   * @param {() => void} callback
+   * @returns {void}
+   */
+  #playerAttack(callback) {
+    if (this.#activePlayerMonster.isFainted) {
+      callback();
+      return;
+    }
+
     this.#battleMenu.updateInfoPaneMessageNoInputRequired(
       `${this.#activePlayerMonster.name} used ${
         this.#activePlayerMonster.attacks[this.#activePlayerAttackIndex].name
@@ -220,7 +246,8 @@ export class BattleScene extends BaseScene {
                 this.#activeEnemyMonster.takeDamage(
                   this.#activePlayerMonster.baseAttack,
                   () => {
-                    this.#enemyAttack();
+                    // this.#enemyAttack();
+                    callback();
                   },
                 );
               });
@@ -231,9 +258,13 @@ export class BattleScene extends BaseScene {
     );
   }
 
-  #enemyAttack() {
+  /**
+   * @param {() => void} callback
+   * @returns {void}
+   */
+  #enemyAttack(callback) {
     if (this.#activeEnemyMonster.isFainted) {
-      this.#battleStateMachine.setState(BATTLE_STATES.POST_ATTACK_CHECK);
+      callback();
       return;
     }
 
@@ -258,9 +289,10 @@ export class BattleScene extends BaseScene {
                 this.#activePlayerMonster.takeDamage(
                   this.#activeEnemyMonster.baseAttack,
                   () => {
-                    this.#battleStateMachine.setState(
-                      BATTLE_STATES.POST_ATTACK_CHECK,
-                    );
+                    // this.#battleStateMachine.setState(
+                    //   BATTLE_STATES.POST_ATTACK_CHECK,
+                    // );
+                    callback();
                   },
                 );
               });
@@ -272,6 +304,15 @@ export class BattleScene extends BaseScene {
   }
 
   #postBattleSquenceCheck() {
+    this.#sceneData.playerMonsters[
+      this.#activePlayerMonsterPartyIndex
+    ].currentHp = this.#activePlayerMonster.currentHp;
+
+    dataManager.store.set(
+      DATA_MANAGER_STORE_KEYS.MONSTERS_IN_PARTY,
+      this.#sceneData.playerMonsters,
+    );
+
     if (this.#activeEnemyMonster.isFainted) {
       this.#activeEnemyMonster.playDeathAnimation(() => {
         this.#battleMenu.updateInfoPaneMessagesAndWaitForInput(
@@ -297,6 +338,7 @@ export class BattleScene extends BaseScene {
             "You have no more monsters, escaping to safety...",
           ],
           () => {
+            this.#playerKnockedOut = true;
             this.#battleStateMachine.setState(BATTLE_STATES.FINISHED);
           },
         );
@@ -310,11 +352,16 @@ export class BattleScene extends BaseScene {
   }
 
   #transitionToNextScene() {
+    /**@type {import("./world-scene.js").WorldSceneData} */
+    const sceneDataToPass = {
+      isPlayerKnockedOut: this.#playerKnockedOut,
+    };
+
     this.cameras.main.fadeOut(1600, 0, 0, 0);
     this.cameras.main.once(
       Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE,
       () => {
-        this.scene.start(SCENE_KEYS.WORLD_SCENE);
+        this.scene.start(SCENE_KEYS.WORLD_SCENE, sceneDataToPass);
       },
     );
   }
@@ -418,19 +465,44 @@ export class BattleScene extends BaseScene {
           );
 
           this.time.delayedCall(500, () => {
-            this.#enemyAttack();
+            this.#enemyAttack(() => {
+              this.#battleStateMachine.setState(
+                BATTLE_STATES.POST_ATTACK_CHECK,
+              );
+            });
           });
           return;
         }
 
         if (this.#battleMenu.isAttemptingToFlee) {
           this.time.delayedCall(500, () => {
-            this.#enemyAttack();
+            this.#enemyAttack(() => {
+              this.#battleStateMachine.setState(
+                BATTLE_STATES.POST_ATTACK_CHECK,
+              );
+            });
           });
           return;
         }
 
-        this.#playerAttack();
+        const randomNumber = Phaser.Math.Between(0, 1);
+
+        if (randomNumber === 0) {
+          this.#playerAttack(() => {
+            this.#enemyAttack(() => {
+              this.#battleStateMachine.setState(
+                BATTLE_STATES.POST_ATTACK_CHECK,
+              );
+            });
+          });
+          return;
+        }
+
+        this.#enemyAttack(() => {
+          this.#playerAttack(() => {
+            this.#battleStateMachine.setState(BATTLE_STATES.POST_ATTACK_CHECK);
+          });
+        });
       },
     });
 

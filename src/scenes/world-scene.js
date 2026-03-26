@@ -12,6 +12,15 @@ import { DialogUi } from "../world/dialog-ui.js";
 import { NPC } from "../world/characters/npc.js";
 import { Menu } from "../world/menu/menu.js";
 import { BaseScene } from "./base-scene.js";
+import { DataUtils } from "../utils/data-utils.js";
+
+/**
+ * @typedef TiledObjectProperty
+ * @type {object}
+ * @property {string} name
+ * @property {string} type
+ * @property {any} value
+ */
 
 const TILED_SIGN_PROPERTY = Object.freeze({
   MESSAGE: "message",
@@ -30,11 +39,9 @@ const TILED_NPC_PROPERTY = Object.freeze({
 });
 
 /**
- * @typedef TiledObjectProperty
+ * @typedef WorldSceneData
  * @type {object}
- * @property {string} name
- * @property {string} type
- * @property {any} value
+ * @property {boolean} isPlayerKnockedOut
  */
 
 export class WorldScene extends BaseScene {
@@ -54,6 +61,8 @@ export class WorldScene extends BaseScene {
   #npcPlayerIsInteractingWith;
   /**@type {Menu} */
   #menu;
+  /**@type {WorldSceneData} */
+  #sceneData;
 
   constructor() {
     super({
@@ -62,8 +71,13 @@ export class WorldScene extends BaseScene {
     });
   }
 
-  init() {
-    super.init();
+  /**
+   * @param {WorldSceneData} data
+   * @returns {void}
+   */
+  init(data) {
+    super.init(data);
+    this.#sceneData = data;
     this.#wildMonsterEncounter = false;
     this.#npcPlayerIsInteractingWith = undefined;
   }
@@ -217,7 +231,14 @@ export class WorldScene extends BaseScene {
       this.cameras.main.once(
         Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE,
         () => {
-          this.scene.start(SCENE_KEYS.BATTLE_SCENE);
+          /**@type {import("./battle-scene.js").BattleSceneData} */
+          const dataToPass = {
+            enemyMonsters: [DataUtils.getMonsterById(this, 2)],
+            playerMonsters: dataManager.store.get(
+              DATA_MANAGER_STORE_KEYS.MONSTERS_IN_PARTY,
+            ),
+          };
+          this.scene.start(SCENE_KEYS.BATTLE_SCENE, dataToPass);
         },
       );
     }

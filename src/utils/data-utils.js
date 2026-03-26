@@ -35,7 +35,7 @@ export class DataUtils {
 
     return data.find((item) => item.id === itemId);
   }
-  
+
   /**
    * @param {Phaser.Scene} scene
    * @param {number[]} itemIds
@@ -48,5 +48,17 @@ export class DataUtils {
     return data.filter((item) => {
       return itemIds.some((id) => id === item.id);
     });
+  }
+
+  /**
+   * @param {Phaser.Scene} scene
+   * @param {number} monsterId
+   * @returns {import("../types/typedef").Monster}
+   */
+  static getMonsterById(scene, monsterId) {
+    /**@type {import("../types/typedef").Monster[]} */
+    const data = scene.cache.json.get(DATA_ASSETS_KEYS.MONSTERS);
+
+    return data.find((monster) => monster.id === monsterId);
   }
 }

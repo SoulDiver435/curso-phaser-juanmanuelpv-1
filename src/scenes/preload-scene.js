@@ -135,6 +135,8 @@ export class PreloadScene extends BaseScene {
 
     this.load.json(DATA_ASSETS_KEYS.ITEMS, "assets/data/items.json");
 
+    this.load.json(DATA_ASSETS_KEYS.MONSTERS, "assets/data/monsters.json");
+
     //Cargar Fuentes personalizadas
     this.load.addFile(
       new WebFontFileLoader(this.load, [KENNEY_FUTURE_NARROW_FONT_NAME]),
@@ -248,8 +250,9 @@ export class PreloadScene extends BaseScene {
   create() {
     super.create();
     this.#createAnimations();
+    dataManager.init(this);
     dataManager.loadData();
-    this.scene.start(SCENE_KEYS.BATTLE_SCENE);
+    this.scene.start(SCENE_KEYS.TITLE_SCENE);
   }
 
   #createAnimations() {
