@@ -1,12 +1,18 @@
-import { TITLE_ASSET_KEYS, UI_ASSETS_KEYS } from "../assets/asset-keys.js";
+import {
+  AUDIO_ASSET_KEYS,
+  TITLE_ASSET_KEYS,
+  UI_ASSETS_KEYS,
+} from "../assets/asset-keys.js";
 import { KENNEY_FUTURE_NARROW_FONT_NAME } from "../assets/font-keys.js";
 import { DIRECTION } from "../common/direction.js";
 import Phaser from "../lib/phaser.js";
+import { playBackgroundMusic } from "../utils/audio-utils.js";
 import { DATA_MANAGER_STORE_KEYS, dataManager } from "../utils/data-manager.js";
 import { exhaustiveGuard } from "../utils/guard.js";
 import { NineSlice } from "../utils/nine-slice.js";
 import { BaseScene } from "./base-scene.js";
 import { SCENE_KEYS } from "./scene-keys.js";
+
 
 /**@type {Phaser.Types.GameObjects.Text.TextStyle} */
 const MENU_TEXT_STYLE = Object.freeze({
@@ -154,12 +160,17 @@ export class TitleScene extends BaseScene {
       },
     );
 
-    
+    // this.sound.play(AUDIO_ASSET_KEYS.TITLE, {
+    //   loop: true,
+    //   volume: 0.9
+    // });
+
+    playBackgroundMusic(this, AUDIO_ASSET_KEYS.TITLE);
   }
 
   update() {
     super.update();
-    
+
     if (this._controls.isInputLocked) return;
 
     const wasSpaceKeyPressed = this._controls.wasSpaceKeyPressed();

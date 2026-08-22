@@ -1,4 +1,4 @@
-import { MONSTER_ASSET_KEYS } from "../assets/asset-keys.js";
+import { AUDIO_ASSET_KEYS, MONSTER_ASSET_KEYS } from "../assets/asset-keys.js";
 import {
   ATTACK_TARGET,
   AttackManager,
@@ -17,6 +17,8 @@ import { createSceneTransition } from "../utils/scene-transition.js";
 import { StateMachine } from "../utils/state-machine.js";
 import { BaseScene } from "./base-scene.js";
 import { SCENE_KEYS } from "./scene-keys.js";
+// Al final del método create de cada escena
+import { playBackgroundMusic, playSoundFX } from "../utils/audio-utils.js";
 
 const BATTLE_STATES = Object.freeze({
   INTRO: "INTRO",
@@ -140,6 +142,7 @@ export class BattleScene extends BaseScene {
     this.#attackManager = new AttackManager(this, this.#skipAnimations);
 
     this._controls.lockInput = true;
+    playBackgroundMusic(this, AUDIO_ASSET_KEYS.BATTLE);
   }
 
   update() {
@@ -237,6 +240,12 @@ export class BattleScene extends BaseScene {
       }`,
       () => {
         this.time.delayedCall(500, () => {
+          this.time.delayedCall(100, () => {
+            const attack =
+              this.#activePlayerMonster.attacks[this.#activePlayerAttackIndex];
+            playSoundFX(this, attack.audioKey);
+          });
+
           this.#attackManager.playAttackAnimation(
             this.#activePlayerMonster.attacks[this.#activePlayerAttackIndex]
               .animationName,
@@ -280,6 +289,12 @@ export class BattleScene extends BaseScene {
       }`,
       () => {
         this.time.delayedCall(500, () => {
+          this.time.delayedCall(100, () => {
+            const attack =
+              this.#activeEnemyMonster.attacks[this.#activeEnemyAttackIndex];
+            playSoundFX(this, attack.audioKey);
+          });
+
           this.#attackManager.playAttackAnimation(
             this.#activeEnemyMonster.attacks[this.#activeEnemyAttackIndex]
               .animationName,
@@ -527,6 +542,9 @@ export class BattleScene extends BaseScene {
 
         if (randomNumber > 5) {
           //El jugador huyó con éxito
+
+          playSoundFX(this, AUDIO_ASSET_KEYS.FLEE);
+
           this.#battleMenu.updateInfoPaneMessagesAndWaitForInput(
             [`You got away safely!`],
             () => {

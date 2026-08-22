@@ -17,6 +17,13 @@ const LOCAL_STORAGE_KEY = "MONSTER_TAMER_DATA";
  * @typedef MonsterData
  * @type {object}
  * @property {import("../types/typedef.js").Monster[]} inParty
+ /* 
+
+/**
+ * @typedef PlayerLocation
+ * @type {object}
+ * @property {string} area
+ * @property {boolean} isInterior
 
 /**
  * @typedef GlobalState
@@ -25,6 +32,7 @@ const LOCAL_STORAGE_KEY = "MONSTER_TAMER_DATA";
  * @property {object} player.position
  * @property {number} player.position.x
  * @property {number} player.position.y
+ * @property {PlayerLocation} player.location 
  * @property {import("../common/direction.js").Direction} player.direction
  * @property {object} options
  * @property {import("../common/options.js").TextSpeedMenuOptions} options.textSpeed
@@ -36,16 +44,21 @@ const LOCAL_STORAGE_KEY = "MONSTER_TAMER_DATA";
  * @property {boolean} gameStarted
  * @property {MonsterData} monsters
  * @property {import("../types/typedef.js").Inventory} inventory
+ * @property {number[]} itemsPickedUp 
  */
 
 /**@type {GlobalState} */
 const initialState = {
   player: {
     position: {
-      x: 6 * TILE_SIZE,
+      x: 4 * TILE_SIZE,
       y: 21 * TILE_SIZE,
     },
     direction: DIRECTION.DOWN,
+    location: {
+      area: "main_1",
+      isInterior: false,
+    },
   },
   options: {
     textSpeed: TEXT_SPEED_OPTIONS.MID,
@@ -64,14 +77,16 @@ const initialState = {
       item: {
         id: 1,
       },
-      quantity: 1,
+      quantity: 10,
     },
   ],
+  itemsPickedUp: [],
 };
 
 export const DATA_MANAGER_STORE_KEYS = Object.freeze({
   PLAYER_DIRECTION: "PLAYER_DIRECTION",
   PLAYER_POSITION: "PLAYER_POSITION",
+  PLAYER_LOCATION: "PLAYER_LOCATION",
   OPTIONS_TEXT_SPEED: "OPTIONS_TEXT_SPEED",
   OPTIONS_BATTLE_SCENE_ANIMATIONS: "OPTIONS_BATTLE_SCENE_ANIMATIONS",
   OPTIONS_BATTLE_STYLE: "OPTIONS_BATTLE_STYLE",
@@ -81,6 +96,7 @@ export const DATA_MANAGER_STORE_KEYS = Object.freeze({
   GAME_STARTED: "GAME_STARTED",
   MONSTERS_IN_PARTY: "MONSTERS_IN_PARTY",
   INVENTORY: "INVENTORY",
+  ITEMS_PICKED_UP: "ITEMS_PICKED_UP",
 });
 
 class DataManager extends Phaser.Events.EventEmitter {
@@ -144,7 +160,7 @@ class DataManager extends Phaser.Events.EventEmitter {
 
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
   }
-  
+
   /**
    *
    * @param {Phaser.Scene} scene
@@ -155,6 +171,7 @@ class DataManager extends Phaser.Events.EventEmitter {
     const existingData = { ...this.#dataManagerDataToGlobalStateObject() };
 
     existingData.player.position = { ...initialState.player.position };
+    existingData.player.location = { ...initialState.player.location };
     existingData.player.direction = initialState.player.direction;
     existingData.gameStarted = initialState.gameStarted;
     existingData.monsters = {
@@ -162,6 +179,7 @@ class DataManager extends Phaser.Events.EventEmitter {
     };
 
     existingData.inventory = initialState.inventory;
+    existingData.itemsPickedUp = [...initialState.itemsPickedUp];
 
     this.#store.reset();
     this.#updateDataManager(existingData);
@@ -196,7 +214,6 @@ class DataManager extends Phaser.Events.EventEmitter {
   }
 
   /**
-   *
    * @param {Phaser.Scene} scene
    * @returns {import("../types/typedef.js").InventoryItem[]}
    */
@@ -216,6 +233,41 @@ class DataManager extends Phaser.Events.EventEmitter {
     });
 
     return items;
+  }
+
+  /**
+   * @param {import("../types/typedef.js").Item} item
+   * @param {number} quantity
+   */
+  addItem(item, quantity) {
+    const inventory = this.#store.get(DATA_MANAGER_STORE_KEYS.INVENTORY);
+
+    const existingItem = inventory.find((inventoryItem) => {
+      return inventoryItem.item.id === item.id;
+    });
+
+    if (existingItem) {
+      existingItem.quantity += quantity;
+    } else {
+      inventory.push({
+        item,
+        quantity,
+      });
+    }
+
+    this.#store.set(DATA_MANAGER_STORE_KEYS.INVENTORY, inventory);
+  }
+
+  /**
+   * @param {number} itemId
+   */
+  addItemPickedUp(itemId) {
+    /**@type {number[]}  */
+    const itemsPickedUp =
+      this.#store.get(DATA_MANAGER_STORE_KEYS.ITEMS_PICKED_UP) || [];
+
+    itemsPickedUp.push(itemId);
+    this.#store.set(DATA_MANAGER_STORE_KEYS.ITEMS_PICKED_UP, itemsPickedUp);
   }
 
   /**
@@ -244,6 +296,9 @@ class DataManager extends Phaser.Events.EventEmitter {
     this.#store.set({
       [DATA_MANAGER_STORE_KEYS.PLAYER_POSITION]: data.player.position,
       [DATA_MANAGER_STORE_KEYS.PLAYER_DIRECTION]: data.player.direction,
+      [DATA_MANAGER_STORE_KEYS.PLAYER_LOCATION]: data.player.location || {
+        ...initialState.player.location,
+      },
       [DATA_MANAGER_STORE_KEYS.OPTIONS_TEXT_SPEED]: data.options.textSpeed,
       [DATA_MANAGER_STORE_KEYS.OPTIONS_BATTLE_SCENE_ANIMATIONS]:
         data.options.battleSceneAnimations,
@@ -254,9 +309,14 @@ class DataManager extends Phaser.Events.EventEmitter {
       [DATA_MANAGER_STORE_KEYS.GAME_STARTED]: data.gameStarted,
       [DATA_MANAGER_STORE_KEYS.MONSTERS_IN_PARTY]: data.monsters.inParty,
       [DATA_MANAGER_STORE_KEYS.INVENTORY]: data.inventory,
+      [DATA_MANAGER_STORE_KEYS.ITEMS_PICKED_UP]: data.itemsPickedUp,
     });
   }
 
+  /**
+   *
+   * @returns {GlobalState}
+   */
   #dataManagerDataToGlobalStateObject() {
     return {
       player: {
@@ -265,6 +325,9 @@ class DataManager extends Phaser.Events.EventEmitter {
           y: this.#store.get(DATA_MANAGER_STORE_KEYS.PLAYER_POSITION).y,
         },
         direction: this.#store.get(DATA_MANAGER_STORE_KEYS.PLAYER_DIRECTION),
+        location: {
+          ...this.store.get(DATA_MANAGER_STORE_KEYS.PLAYER_LOCATION),
+        },
       },
       options: {
         textSpeed: this.#store.get(DATA_MANAGER_STORE_KEYS.OPTIONS_TEXT_SPEED),
@@ -285,6 +348,9 @@ class DataManager extends Phaser.Events.EventEmitter {
         ],
       },
       inventory: this.store.get(DATA_MANAGER_STORE_KEYS.INVENTORY),
+      itemsPickedUp: [
+        ...(this.store.get(DATA_MANAGER_STORE_KEYS.ITEMS_PICKED_UP) || []),
+      ],
     };
   }
 }

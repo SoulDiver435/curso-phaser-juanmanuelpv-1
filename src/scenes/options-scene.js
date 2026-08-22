@@ -9,6 +9,7 @@ import {
   TEXT_SPEED_OPTIONS,
 } from "../common/options.js";
 import Phaser from "../lib/phaser.js";
+import { setGlobalSoundSettings } from "../utils/audio-utils.js";
 import { Controls } from "../utils/controls.js";
 import { DATA_MANAGER_STORE_KEYS, dataManager } from "../utils/data-manager.js";
 import { exhaustiveGuard } from "../utils/guard.js";
@@ -284,6 +285,7 @@ export class OptionsScene extends BaseScene {
     ) {
       this._controls.lockInput = true;
       this.#updateOptionDataInDataManager();
+      setGlobalSoundSettings(this);
       this.cameras.main.fadeOut(500, 0, 0, 0);
       return;
     }

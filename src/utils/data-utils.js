@@ -61,4 +61,15 @@ export class DataUtils {
 
     return data.find((monster) => monster.id === monsterId);
   }
+
+  /**
+   * @param {Phaser.Scene} scene
+   * @param {number} areaId
+   * @returns {number[][]}
+   */
+  static getEncounterAreaDetails(scene, areaId) {
+    /**@type {import("../types/typedef").EncounterData} */
+    const data = scene.cache.json.get(DATA_ASSETS_KEYS.ENCOUNTERS);
+    return data[areaId];
+  }
 }

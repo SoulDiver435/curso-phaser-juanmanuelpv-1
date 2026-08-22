@@ -1,7 +1,9 @@
 import {
   ATTACK_ASSETS_KEYS,
+  AUDIO_ASSET_KEYS,
   BATTLE_ASSET_KEYS,
   BATTLE_BACKGROUND_ASSET_KEYS,
+  BUILDING_ASSET_KEYS,
   CHARACTER_ASSET_KEYS,
   DATA_ASSETS_KEYS,
   HEALTH_BAR_ASSET_KEYS,
@@ -19,6 +21,7 @@ import { WebFontFileLoader } from "../assets/web-font-file-loader.js";
 import { DataUtils } from "../utils/data-utils.js";
 import { dataManager } from "../utils/data-manager.js";
 import { BaseScene } from "./base-scene.js";
+import { setGlobalSoundSettings } from "../utils/audio-utils.js";
 
 export class PreloadScene extends BaseScene {
   constructor() {
@@ -91,6 +94,18 @@ export class PreloadScene extends BaseScene {
       MONSTER_ASSET_KEYS.IGUANIGNITE,
       `${monsterTamerAssetPath}/monsters/iguanignite.png`,
     );
+    this.load.image(
+      MONSTER_ASSET_KEYS.AQUAVALOR,
+      `${monsterTamerAssetPath}/monsters/aquavalor.png`,
+    );
+    this.load.image(
+      MONSTER_ASSET_KEYS.FROSTSABER,
+      `${monsterTamerAssetPath}/monsters/frostsaber.png`,
+    );
+    this.load.image(
+      MONSTER_ASSET_KEYS.IGNIVOLT,
+      `${monsterTamerAssetPath}/monsters/Ignivolt.png`,
+    );
 
     //Assets de UI
     this.load.image(
@@ -137,6 +152,8 @@ export class PreloadScene extends BaseScene {
 
     this.load.json(DATA_ASSETS_KEYS.MONSTERS, "assets/data/monsters.json");
 
+    this.load.json(DATA_ASSETS_KEYS.ENCOUNTERS, "assets/data/encounters.json");
+
     //Cargar Fuentes personalizadas
     this.load.addFile(
       new WebFontFileLoader(this.load, [KENNEY_FUTURE_NARROW_FONT_NAME]),
@@ -171,25 +188,61 @@ export class PreloadScene extends BaseScene {
 
     //Cargar assets del mundo
     this.load.image(
-      WORLD_ASSET_KEYS.WORLD_BACKGROUND,
-      `${monsterTamerAssetPath}/map/level_background.png`,
+      WORLD_ASSET_KEYS.MAIN_1_BACKGROUND,
+      `${monsterTamerAssetPath}/map/main_1_level_background.png`,
+    );
+    this.load.image(
+      WORLD_ASSET_KEYS.MAIN_1_FOREGROUND,
+      `${monsterTamerAssetPath}/map/main_1_level_foreground.png`,
     );
 
     this.load.tilemapTiledJSON(
-      WORLD_ASSET_KEYS.WORLD_MAIN_LEVEL,
-      `assets/data/level.json`,
+      WORLD_ASSET_KEYS.MAIN_1_LEVEL,
+      `assets/data/main_1.json`,
     );
+
     this.load.image(
       WORLD_ASSET_KEYS.WORLD_COLLISION,
       `${monsterTamerAssetPath}/map/collision.png`,
     );
-    this.load.image(
-      WORLD_ASSET_KEYS.WORLD_FOREGROUND,
-      `${monsterTamerAssetPath}/map/level_foreground.png`,
-    );
+
     this.load.image(
       WORLD_ASSET_KEYS.WORLD_ENCOUNTER_ZONE,
       `${monsterTamerAssetPath}/map/encounter.png`,
+    );
+    this.load.spritesheet(
+      WORLD_ASSET_KEYS.BEACH,
+      `${axulArtAssetPath}/beach/AxulArtīs_Basic-Top-down-interior_By_AxulArt_scaled_4x_pngcrushed.png`,
+      {
+        frameWidth: 64,
+        frameHeight: 64,
+      },
+    );
+
+    this.load.image(
+      BUILDING_ASSET_KEYS.BUILDING_1_BACKGROUND,
+      `${monsterTamerAssetPath}/map/buildings/building_1_level_background.png`,
+    );
+    this.load.image(
+      BUILDING_ASSET_KEYS.BUILDING_1_FOREGROUND,
+      `${monsterTamerAssetPath}/map/buildings/building_1_level_foreground.png`,
+    );
+    this.load.tilemapTiledJSON(
+      BUILDING_ASSET_KEYS.BUILDING_1_LEVEL,
+      `assets/data/building_1.json`,
+    );
+
+    this.load.image(
+      BUILDING_ASSET_KEYS.BUILDING_2_BACKGROUND,
+      `${monsterTamerAssetPath}/map/buildings/building_2_level_background.png`,
+    );
+    this.load.image(
+      BUILDING_ASSET_KEYS.BUILDING_2_FOREGROUND,
+      `${monsterTamerAssetPath}/map/buildings/building_2_level_foreground.png`,
+    );
+    this.load.tilemapTiledJSON(
+      BUILDING_ASSET_KEYS.BUILDING_2_LEVEL,
+      `assets/data/building_2.json`,
     );
 
     //Cargar imágenes de personajes
@@ -245,6 +298,20 @@ export class PreloadScene extends BaseScene {
       INVENTORY_ASSET_KEYS.INVENTORY_BAG,
       `${monsterTamerAssetPath}/ui/inventory/bag.png`,
     );
+
+    //load audio
+    this.load.setPath("assets/audio/xDeviruchi");
+
+    this.load.audio(AUDIO_ASSET_KEYS.MAIN, "And-the-Journey-Begins.wav");
+    this.load.audio(AUDIO_ASSET_KEYS.BATTLE, "Decisive-Battle.wav");
+    this.load.audio(AUDIO_ASSET_KEYS.TITLE, "Title-Theme.wav");
+
+    this.load.setPath("assets/audio/leohpaz");
+
+    this.load.audio(AUDIO_ASSET_KEYS.CLAW, "03_Claw_03.wav");
+    this.load.audio(AUDIO_ASSET_KEYS.GRASS, "03_Step_grass_03.wav");
+    this.load.audio(AUDIO_ASSET_KEYS.ICE, "13_Ice_explosion_01.wav");
+    this.load.audio(AUDIO_ASSET_KEYS.FLEE, "51_Flee_02.wav");
   }
 
   create() {
@@ -253,6 +320,7 @@ export class PreloadScene extends BaseScene {
     dataManager.init(this);
     dataManager.loadData();
     this.scene.start(SCENE_KEYS.TITLE_SCENE);
+    setGlobalSoundSettings(this);
   }
 
   #createAnimations() {

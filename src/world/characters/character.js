@@ -25,6 +25,7 @@ import { exhaustiveGuard } from "../../utils/guard.js";
  * @property {Phaser.Tilemaps.TilemapLayer} [collisionLayer]
  * @property {Character[]} [otherCharactersToCheckForCollisionsWith = []]
  * @property {() => void} [spriteChangeDirectionCallback]
+ * @property {{position: import("../../types/typedef.js").Coordinate }[]} [objectsToCheckForCollisionsWith]
  */
 
 export class Character {
@@ -52,6 +53,8 @@ export class Character {
   _otherCharactersToCheckForCollisionsWith;
   /**@protected @type {()=> void | undefined} */
   _spriteChangeDirectionCallback;
+  /**@protected @type {{position: import("../../types/typedef.js").Coordinate }[]} */
+  _objectsToCheckForCollisionsWith;
 
   /**
    * @param {CharacterConfig} config
@@ -74,12 +77,14 @@ export class Character {
         config.position.x,
         config.position.y,
         config.assetKey,
-        this._getIdleFrame()
+        this._getIdleFrame(),
       )
       .setOrigin(this._origin.x, this._origin.y);
     this._spriteGridMovementFinishedCallback =
       config.spriteGridMovementFinishedCallback;
     this._spriteChangeDirectionCallback = config.spriteChangeDirectionCallback;
+    this._objectsToCheckForCollisionsWith =
+      config.objectsToCheckForCollisionsWith || [];
   }
 
   /**@type {Phaser.GameObjects.Sprite} */
@@ -130,8 +135,7 @@ export class Character {
     const idleFrame =
       this._phaserGameObject.anims.currentAnim?.frames[1].frame.name;
 
-      // console.log(idleFrame);
-      
+    // console.log(idleFrame);
 
     this._phaserGameObject.anims.stop();
 
@@ -183,12 +187,13 @@ export class Character {
     const targetPosition = { ...this._targetPosition };
     const updatedPosition = getTargetPositionFromGameObjectPositionAndDirection(
       targetPosition,
-      this._direction
+      this._direction,
     );
 
     return (
       this.#doesPositionCollideWithCollisionLayer(updatedPosition) ||
-      this.#doesPositionCollideWithOtherCharacter(updatedPosition)
+      this.#doesPositionCollideWithOtherCharacter(updatedPosition) ||
+      this.#doesPositionCollideWithObject(updatedPosition)
     );
   }
 
@@ -197,7 +202,7 @@ export class Character {
 
     const updatedPosition = getTargetPositionFromGameObjectPositionAndDirection(
       this._targetPosition,
-      this._direction
+      this._direction,
     );
 
     this._previousTargetPosition = { ...this._targetPosition };
@@ -207,7 +212,7 @@ export class Character {
 
     this._scene.add.tween({
       delay: 0,
-      duration: 600,
+      duration: 400,
       y: {
         from: this._phaserGameObject.y,
         start: this._phaserGameObject.y,
@@ -247,7 +252,6 @@ export class Character {
   }
 
   /**
-   *
    * @param {import("../../types/typedef.js").Coordinate} position
    * @returns {boolean}
    */
@@ -268,5 +272,23 @@ export class Character {
       });
 
     return collidesWithACharacter;
+  }
+
+  /**
+   * @param {import("../../types/typedef.js").Coordinate} position
+   * @returns {boolean}
+   */
+  #doesPositionCollideWithObject(position) {
+    const { x, y } = position;
+
+    if (this._objectsToCheckForCollisionsWith.length === 0) return false;
+
+    const collidesWithObject = this._objectsToCheckForCollisionsWith.some(
+      (object) => {
+        return object.position.x === x && object.position.y === y;
+      },
+    );
+
+    return collidesWithObject;
   }
 }

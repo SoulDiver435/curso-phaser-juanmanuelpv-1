@@ -38,6 +38,7 @@ import Phaser from "../lib/phaser.js";
  * @property {number} id
  * @property {string} name
  * @property {import("../battle/attacks/attack-keys.js").AttackKeys} animationName
+ * @property {string} audioKey
  */
 
 /**
@@ -88,4 +89,9 @@ export const ITEM_EFFECT = Object.freeze({
  * @type {object}
  * @property {Item} item
  * @property {number} quantity
+ */
+
+/**
+ * @typedef EncounterData
+ * @type {Object.<string, number[][]>}
  */
